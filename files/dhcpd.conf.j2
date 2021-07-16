@@ -1,0 +1,6 @@
+subnet {{ lan_address }} netmask {{ lan_cidr | ipaddr('netmask')}} {
+  range {{ lan_dhcp_cidr | ipaddr('next_usable')}} {{ lan_dhcp_cidr | ipaddr('last_usable')}};
+  option routers {{ lan_address }};
+  option domain-name-servers {{ lan_address }};
+  option broadcast-address {{ lan_cidr | ipaddr('broadcast') }};
+}

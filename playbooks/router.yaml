@@ -1,0 +1,98 @@
+# vim: set ft=yaml.ansible:
+---
+- hosts: all
+  become: yes
+  vars_files:
+    - ../vars/main.yaml
+  tasks:
+    - name: Install DHCP and DNS packages
+      package:
+        name:
+          - isc-dhcp-server
+          - bind9
+      tags:
+        - dhcp
+        - dns
+
+    # Netplan
+    - name: Add netplan config for interfaces
+      template:
+        src: ../files/10-router.yaml.j2
+        dest: /etc/netplan/10-router.yaml
+      register: netplan_config
+      tags: netplan
+
+    - name: Apply netplan config changes
+      command: netplan apply
+      when: "{{ netplan_config.changed }}"
+      tags: netplan
+
+    # ConfigureWithoutCarrier
+    - name: Enable ConfigureWithoutCarrier for LAN interface
+      lineinfile:
+        path: "/run/systemd/network/10-netplan-{{ lan_interface }}.network"
+        insertafter: "\[Network\]"
+        line: "ConfigureWithoutCarrier=true"
+        regexp: "ConfigureWithoutCarrier"
+      register: enable_without_carrier
+      tags: without-carrier
+
+    - name: Restart networkd
+      systemd:
+        name: systemd-networkd.service
+        state: restarted
+      when: "{{ enable_without_carrier.changed }}"
+      tags: without-carrier
+
+    # Packet Forwarding
+    - name: Enable ipv4 packet forwarding in sysctl
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: "1"
+        sysctl_set: yes
+        state: present
+        reload: yes
+      tags: packet-forwarding
+
+    # IPTables
+    - name: Create iptables restore script
+      copy:
+        src: ../files/01iptables.sh
+        dest: /etc/networkd-dispatcher/configuring.d/01iptables.sh
+        owner: root
+        mode: "755"
+      tags: iptables
+
+    - name: Create iptables rules
+      template:
+        src: ../files/iptables_rules.j2
+        dest: /etc/networkd-dispatcher/iptables_rules
+      register: iptables_rules
+      tags: iptables
+
+    - name: Load up iptables rules
+      command: /etc/networkd-dispatcher/configuring.d/01iptables.sh
+      when: "{{ iptables_rules.changed }}"
+      tags: iptables
+
+    # DHCP
+    - name: Create isc-dhcp-server config
+      template:
+        src: ../files/isc-dhcp-server.j2
+        dest: /etc/default/isc-dhcp-server
+      register: dhcp_server_config
+      tags: dhcp
+
+    - name: Create DHCP config
+      template:
+        src: ../files/dhcpd.conf.j2
+        dest: /etc/dhcp/dhcpd.conf
+      register: dhcp_config
+      tags: dhcp
+
+    - name: Start and enable isc-dhcp-server
+      systemd:
+        name: isc-dhcp-server.service
+        state: "{{ 'restarted' if dhcp_server_config.changed or dhcp_config.changed else 'started' }}"
+        enabled: yes
+      tags: dhcp

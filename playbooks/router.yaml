@@ -9,7 +9,7 @@
       package:
         name:
           - isc-dhcp-server
-          - bind9
+          - unbound
       tags:
         - dhcp
         - dns
@@ -31,7 +31,7 @@
     - name: Enable ConfigureWithoutCarrier for LAN interface
       lineinfile:
         path: "/run/systemd/network/10-netplan-{{ lan_interface }}.network"
-        insertafter: "\[Network\]"
+        insertafter: '\[Network\]'
         line: "ConfigureWithoutCarrier=true"
         regexp: "ConfigureWithoutCarrier"
       register: enable_without_carrier
@@ -96,3 +96,25 @@
         state: "{{ 'restarted' if dhcp_server_config.changed or dhcp_config.changed else 'started' }}"
         enabled: yes
       tags: dhcp
+
+    # DNS
+    - name: Create base unbound dns config
+      template:
+        src: ../files/unbound.conf
+        dest: /etc/unbound/unbound.conf.d/unbound.conf
+      register: unbound_config
+      tags: dns
+
+    - name: Create blocklist
+      template:
+        src: ../files/block.conf
+        dest: /etc/unbound/unbound.conf.d/block.conf
+      register: unbound_block_config
+      tags: dns
+
+    - name: Start and enable unbound
+      systemd:
+        name: unbound.service
+        state: "{{ 'restarted' if unbound_config.changed or unbound_block_config.changed else 'started' }}"
+        enabled: yes
+      tags: dns

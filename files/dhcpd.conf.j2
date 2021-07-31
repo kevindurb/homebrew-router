@@ -1,6 +1,59 @@
-subnet {{ lan_address }} netmask {{ lan_cidr | ipaddr('netmask')}} {
-  range {{ lan_dhcp_cidr | ipaddr('next_usable')}} {{ lan_dhcp_cidr | ipaddr('last_usable')}};
-  option routers {{ lan_address }};
-  option domain-name-servers {{ lan_address }};
-  option broadcast-address {{ lan_cidr | ipaddr('broadcast') }};
+subnet 192.168.0.0 netmask 255.255.0.0 {
+  range 192.168.1.1 192.168.1.254;
+  option routers 192.168.0.1;
+  option domain-name-servers 192.168.0.1;
+  option broadcast-address 192.168.255.255;
+}
+
+host ap01 {
+  hardware ethernet 74:da:88:a8:fa:fd;
+  fixed-address 192.168.0.3;
+}
+
+
+host ap02 {
+  hardware ethernet 74:da:88:a8:fa:eb;
+  fixed-address 192.168.0.2;
+}
+
+
+host hoth {
+  hardware ethernet 04:92:26:bf:96:cf;
+  fixed-address 192.168.10.1;
+}
+
+
+host workmac {
+  hardware ethernet f0:18:98:8d:6b:4c;
+  fixed-address 192.168.10.2;
+}
+
+
+host corellia {
+  hardware ethernet 10:02:b5:2b:a5:7f;
+  fixed-address 192.168.10.3;
+}
+
+
+host homelab01 {
+  hardware ethernet 00:22:19:6c:d9:fe;
+  fixed-address 192.168.100.1;
+}
+
+
+host homelab02 {
+  hardware ethernet 00:22:19:6c:da:00;
+  fixed-address 192.168.100.2;
+}
+
+
+host homelab03 {
+  hardware ethernet 00:22:19:6c:da:02;
+  fixed-address 192.168.100.3;
+}
+
+
+host homelab04 {
+  hardware ethernet 00:22:19:6c:da:04;
+  fixed-address 192.168.100.4;
 }

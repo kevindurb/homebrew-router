@@ -1,0 +1,4 @@
+#! /bin/bash
+# grab hosts file from https://github.com/stevenblack/hosts
+
+cat ./hosts | grep '^0\.0\.0\.0' | awk '{print "local-zone: \""$2"\" redirect\nlocal-data: \""$2" A 0.0.0.0\""}' > ./files/block.conf

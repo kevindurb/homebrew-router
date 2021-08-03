@@ -105,6 +105,13 @@
       register: unbound_config
       tags: dns
 
+    - name: Add custom dns entries
+      template:
+        src: ../files/custom.conf
+        dest: /etc/unbound/unbound.conf.d/custom.conf
+      register: custom_config
+      tags: dns
+
     - name: Create blocklist
       template:
         src: ../files/block.conf
@@ -115,6 +122,6 @@
     - name: Start and enable unbound
       systemd:
         name: unbound.service
-        state: "{{ 'restarted' if unbound_config.changed or unbound_block_config.changed else 'started' }}"
+        state: "{{ 'restarted' if unbound_config.changed or custom_config.changed or unbound_block_config.changed else 'started' }}"
         enabled: yes
       tags: dns

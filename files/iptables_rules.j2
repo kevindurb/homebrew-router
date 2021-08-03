@@ -7,9 +7,6 @@
 # {{ wan_interface }} is WAN interface, {{ lan_interface }} is LAN interface
 -A POSTROUTING -o {{ wan_interface }} -j MASQUERADE
 
-# NAT pinhole: wireguard to homelab
--A PREROUTING -p udp -m udp -i {{ wan_interface }} --dport 51820 -j DNAT --to-destination 192.168.100.1:51820
-
 COMMIT
 
 *filter
@@ -26,9 +23,6 @@ COMMIT
 
 # enable traceroute rejections to get sent out
 -A INPUT -p udp -m udp --dport 33434:33523 -j REJECT --reject-with icmp-port-unreachable
-
-# wireguard - accept from LAN and WAN
--A INPUT -p udp --dport 51820 -j ACCEPT
 
 # DNS - accept from LAN
 -A INPUT -i {{ lan_interface }} -p tcp --dport 53 -j ACCEPT
@@ -50,9 +44,6 @@ COMMIT
 
 # forward from LAN ({{ lan_interface }}) to WAN ({{ wan_interface }})
 -A FORWARD -i {{ lan_interface }} -o {{ wan_interface }} -j ACCEPT
-
-# allow traffic from our NAT pinhole wireguard
--A FORWARD -p udp -d 192.168.100.1 --dport 51820 -j ACCEPT
 
 # drop all other forwarded traffic
 -A FORWARD -j DROP
